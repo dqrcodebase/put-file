@@ -1,0 +1,37 @@
+{
+  "name": "put-file-tools",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4173"
+  },
+  "dependencies": {
+    "vue": "^3.2.36"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^2.3.3",
+    "vite": "^2.9.9"
+  },
+  "description": "",
+  "main": "dist/assets/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dqrcodebase/put-file-tools.git"
+  },
+  "keywords": [
+    "上传",
+    "uploader",
+    "http",
+    "request",
+    "XMLHttpRequest",
+    "fetch",
+    "https"
+  ],
+  "author": "dqr",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dqrcodebase/put-file-tools/issues"
+  },
+  "homepage": "https://github.com/dqrcodebase/put-file-tools#readme"
+}
