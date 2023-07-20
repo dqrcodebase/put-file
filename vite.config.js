@@ -11,6 +11,13 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   },
+  devServer: {
+    proxy: {
+      '/api': {
+        target: `https://wmstestportal.cnd-commodities.com/api`,
+      }
+    }
+  },
   build: {
     rollupOptions: {
       output: {
