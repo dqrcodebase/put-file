@@ -1,31 +1,56 @@
 <script setup>
 import { ref } from 'vue';
 import PutFileTools from './components/PutFileTools.vue'
-let chunkSize= ref(1000)
-const inspectApiUrl = '/api/annex/oss/v2/upload'
+import axios from 'axios'
+import './mock.js'
+
+let fileProgress= ref(0)
+const inspectApiUrl = '/api/inspect/'
 const uploadApiUrl = '/api/annex/oss/v2/upload'
-function onchange() {
+async function onchange() {
   console.log("🚀 ~ file: App.vue:5 ~ onchange ~ onchange:")
-  chunkSize.value = 2000
 }
-function inspectHash(hash) {
-console.log("🚀 ~ file: App.vue:10 ~ inspectHash ~ hash:", hash)
-  if(Math.random() > 0.5) {
-    return true
-  }else {
-    return false
-  }
+
+async function inspectRequest(hash) {
+  const res = await axios({
+    method: 'GET',
+    url: `/api/inspect/${hash}`,
+    data: hash
+  }).catch(error => {
+    console.log("🚀 ~ file: PutFileTools.vue:93 ~ inspectRequest ~ error:", error)
+  })
+  console.log("🚀 ~ file: App.vue:22 ~ inspectRequest ~ res:", res)
+  return res.data.data
 }
+
 function onUploadProgress(progress) {
+  fileProgress.value = progress
   console.log("🚀 ~ file: App.vue:19 ~ onUploadProgress ~ progress:", progress)
+}
+
+async function fileUploadRequest(chunk) {
+  const res = await axios({
+    method: 'POST',
+    url: uploadApiUrl,
+    data: chunk,
+    // onUploadProgress: function (progressEvent) {
+    //   console.log("🚀 ~ file: App.vue:36 ~ fileUploadRequest ~ progressEvent:", progressEvent)
+    //   // 处理原生进度事件
+    // },
+  }).catch(error => {
+    console.log("🚀 ~ file: PutFileTools.vue:93 ~ inspectRequest ~ error:", error)
+  })
+  console.log("🚀 ~ file: App.vue:43 ~ fileUploadRequest ~ res:", res)
+  return res
 }
 </script>
 
 <template>
   <main>
-    {{ chunkSize }}
+    {{ fileProgress }}
     <PutFileTools 
-      :inspectHash="inspectHash" 
+      :inspectRequest="inspectRequest" 
+      :fileUploadRequest="fileUploadRequest"
       :inspectApiUrl="inspectApiUrl"
       :uploadApiUrl="uploadApiUrl"
       @onUploadProgress="onUploadProgress"/>

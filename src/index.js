@@ -20,5 +20,7 @@ if (typeof window !== 'undefined') {
 if (GlobalVue) {
   GlobalVue.use(plugin)
 }
+console.log("🚀 ~ file: index.js:22 ~ GlobalVue:", GlobalVue)
+console.log("🚀 ~ file: index.js:26 ~ PutFileTools:", PutFileTools)
 
 export default PutFileTools
