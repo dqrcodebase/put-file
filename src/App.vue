@@ -19,7 +19,6 @@ async function inspectRequest(hash) {
   }).catch(error => {
     console.log("🚀 ~ file: PutFileTools.vue:93 ~ inspectRequest ~ error:", error)
   })
-  console.log("🚀 ~ file: App.vue:22 ~ inspectRequest ~ res:", res)
   return res.data.data
 }
 

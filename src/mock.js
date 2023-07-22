@@ -4,7 +4,6 @@ let chunkFile = {}
 
 // 校验文件是否已经存在在服务器
 Mock.mock(RegExp(`/api/inspect/*`), 'get', function (option) {
-  console.log("🚀 ~ file: mock.js:8 ~ option:", option)
    if(option.body === '70829d59b118311e9cf04c93f3a5bf80') {
     return Mock.mock({
       code: '0000',
@@ -27,12 +26,12 @@ Mock.mock(RegExp(`/api/inspect/*`), 'get', function (option) {
       message: 'ok',
       successfully: true
     });
-  }else if(option.body === '8e44aeb3f21fc69d092f440a7c84dbac') {
+  }else if(option.body === '40b97c7f8cde2d4cef207fcbb0ed4049') {
     return Mock.mock({
       code: '0000',
       data: [
-        '5377466b0ccb4485aad614f9cfb594a7',
-        '69898a5eee3f89e01acf5a63de05a1ab',
+        'd3a509a6d53b8f85a751824eadcc2bbe',
+        'ff36d52097d24abf228c2391a426c3e2',
       ],
       message: 'ok',
       successfully: true
@@ -48,7 +47,6 @@ Mock.mock(RegExp(`/api/inspect/*`), 'get', function (option) {
 });
 
 Mock.mock('/api/annex/oss/v2/upload','post',function(option) {
-  console.log("🚀 ~ file: mock.js:51 ~ Mock.mock ~ option:", option)
   return Mock.mock({
     code: '0000',
     data: true,

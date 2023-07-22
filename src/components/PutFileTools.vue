@@ -1,12 +1,13 @@
 <script setup>
 import SparkMD5 from 'spark-md5'
 import { ref } from 'vue';
+import axios from 'axios'
 
 const props = defineProps({
   // 切片大小
   chunkSize: {
     type: Number,
-    default: 1048576 * 10 // 1MB
+    default: 1048576 * 1 // 1MB
   },
   /**
    * @description 校验文件是否在服务器中存在
@@ -18,8 +19,8 @@ const props = defineProps({
       return () => {}
     }
   },
-  // 文件上传
-  fileUploadRequest: {
+  // 上传失败
+  uploadError: {
     type: Function,
     default: () => {
       return () => {}
@@ -49,6 +50,8 @@ let blobSlice = null
 let file = null
 // 整个文件的hash
 let computedHash = ''
+// 文件大小
+let fileSize = 0
 // 切片数
 let chunkNumber = 0
 // 当前处理的切片索引
@@ -62,6 +65,8 @@ let fileReader = null
 let progress = 0
 let uploadChunkQueue = ref([])
 let spark = null
+// 已上传大小
+let uploadedSize = 0
 
 
 async function onchange() {
@@ -72,6 +77,7 @@ async function onchange() {
 
 // 把文件处理成切片
 function fileProcessing() {
+  fileSize = file.size
   chunkNumber = Math.ceil(file.size / props.chunkSize)
   spark = new SparkMD5.ArrayBuffer()
   fileReader = new FileReader();
@@ -95,7 +101,9 @@ function fileProcessing() {
       loadNext();
     } else {
       computedHash = spark.end()
-      isLoaded = await inspectRequest(computedHash)
+      if(inspectRequest) {
+        isLoaded = await inspectRequest(computedHash)
+      }
       // 验证文件是否已经在服务端存在，如果存在，那就不用上传了，相当于秒传成功。
       if(isLoaded === true) {
         progress = 100
@@ -126,25 +134,51 @@ async function inspectRequest(computedHash) {
   return data
 }
 
+// 文件上传
 async function fileUploadRequest(chunk) {
-  const res = await props.fileUploadRequest(chunk)
-  currentUploadChunkIndex ++
-  chunkUpload()
+  const res = await axios({
+    method: 'POST',
+    url: props.uploadApiUrl,
+    data: chunk,
+    // onUploadProgress: function (progressEvent) {
+    //   console.log("🚀 ~ file: App.vue:36 ~ fileUploadRequest ~ progressEvent:", progressEvent)
+    //   uploadedSize += progressEvent.size
+    //   progress = uploadedSize / fileSize
+    //   emits('onUploadProgress',progress)
+    //   // 处理原生进度事件
+    // },
+  }).catch(error => {
+    console.log("🚀 ~ file: PutFileTools.vue:93 ~ inspectRequest ~ error:", error)
+    props.uploadError(error)
+  })
+  console.log("🚀 ~ file: PutFileTools.vue:148 ~ fileUploadRequest ~ res:", res)
 }
 
 // 切片上传
 async function chunkUpload() {
   if(isLoaded === false) {
-    if(currentUploadChunkIndex > props.concurrencyNumber && currentUploadChunkIndex <=chunkNumber) {
-      fileUploadRequest(uploadChunkQueue.value[currentUploadChunkIndex])
-    }else if(currentUploadChunkIndex <= props.concurrencyNumber){
-      for(let i = 0; i < props.concurrencyNumber;i++) {
-        currentUploadChunkIndex ++
-        fileUploadRequest(uploadChunkQueue.value[i])
-      }
-    }
+    cheakChunkUpload()
   }else if(Object.prototype.toString.call(isLoaded) === '[object Array]') {
+    console.log("🚀 ~ file: PutFileTools.vue:159 ~ chunkUpload ~ currentUploadChunkIndex:", currentUploadChunkIndex)
+
+    if(isLoaded.includes(uploadChunkQueue.value[currentUploadChunkIndex]?.chunkHash)) {
+      uploadedSize += props.chunkSize
+      currentUploadChunkIndex ++
+      chunkUpload()
+    }else {
+      cheakChunkUpload()
+    }
   }
+}
+
+function cheakChunkUpload() {
+    if(currentUploadChunkIndex < chunkNumber){
+      currentUploadChunkIndex ++
+      fileUploadRequest(uploadChunkQueue.value[currentUploadChunkIndex]).then(res => {
+        chunkUpload()
+      })
+      if(currentUploadChunkIndex < concurrencyNumber) chunkUpload()
+    }
 }
 
 </script>
