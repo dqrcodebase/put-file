@@ -29,5 +29,14 @@ export default defineConfig({
       // 输出格式
       formats: ['es', 'umd'], // es项目中可直接use；umd在html文件中引入
     },
+  },
+  server: {
+    proxy: {
+      '/api': {
+        target: `http://localhost:5008/api`,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    }
   }
 })

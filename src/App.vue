@@ -2,16 +2,16 @@
 import { ref } from 'vue';
 import PutFileTools from './components/PutFileTools.vue'
 import axios from 'axios'
-import './mock.js'
 
 let fileProgress= ref(0)
 const inspectApiUrl = '/api/inspect/'
-const uploadApiUrl = '/api/annex/oss/v2/upload'
+const uploadApiUrl = '/api/uploadChunk'
 async function onchange() {
   console.log("🚀 ~ file: App.vue:5 ~ onchange ~ onchange:")
 }
 
 async function inspectRequest(hash) {
+  console.log("🚀 ~ file: App.vue:14 ~ inspectRequest ~ hash:", hash)
   const res = await axios({
     method: 'GET',
     url: `/api/inspect/${hash}`,
@@ -19,19 +19,21 @@ async function inspectRequest(hash) {
   }).catch(error => {
     console.log("🚀 ~ file: PutFileTools.vue:93 ~ inspectRequest ~ error:", error)
   })
+  console.log("🚀 ~ file: App.vue:22 ~ inspectRequest ~ res:", res)
   return res.data.data
 }
 
+// 上传进度
 function onUploadProgress(progress) {
   fileProgress.value = progress
   console.log("🚀 ~ file: App.vue:19 ~ onUploadProgress ~ progress:", progress)
 }
 
 async function fileUploadRequest(chunk) {
+  console.log("🚀 ~ file: App.vue:32 ~ fileUploadRequest ~ chunk:", chunk)
   const res = await axios({
     method: 'POST',
     url: uploadApiUrl,
-    data: chunk,
     // onUploadProgress: function (progressEvent) {
     //   console.log("🚀 ~ file: App.vue:36 ~ fileUploadRequest ~ progressEvent:", progressEvent)
     //   // 处理原生进度事件
@@ -48,7 +50,6 @@ async function fileUploadRequest(chunk) {
   <main>
     {{ fileProgress }}
     <PutFileTools 
-      :inspectRequest="inspectRequest" 
       :fileUploadRequest="fileUploadRequest"
       :inspectApiUrl="inspectApiUrl"
       :uploadApiUrl="uploadApiUrl"
