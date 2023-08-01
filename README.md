@@ -1,29 +1,61 @@
-# put-file-tools
+# put-file-tools 适用于vue3的大文件上传插件
 
-This template should help get you started developing with Vue 3 in Vite.
+## 序言
 
-## Recommended IDE Setup
+> put-file-tools是一款针对大文件，超大文件上传的全方位解决方案，支持断点续传，持久化续传，全程状态监控，严格的请求队列模式，分片传输造成高并发的同时，又保障了数据传输的稳定性。
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
+## 属性
 
-## Customize configuration
+| 参数                |                  说明                           | 类型           |  可选值  |  默认值  |
+| ------------------- | ----------------------------------------------- | ------------- | ---------| ------- |
+| chunkSize           | 切片大小                                        | number         | —     | 10 * 1024 * 1024         |
+| inspectRequest      | 校验文件是否在服务器中存在,已上传返回true，未上传返回false，上传部分切片返回切片hash数组,数组示例：['5377466b0ccb4485aad614f9cfb594a7','69898a5eee3f89e01acf5a63de05a1ab']     | function(hash)       | —     | —        |
+| uploadApiUrl        | 上传文件的接口地址                               | string        | —     | —        |
+| concurrencyNumber   | 切片上传的并发数                                 | number        | —     | 3         |
 
-See [Vite Configuration Reference](https://vitejs.dev/config/).
+## 方法
 
-## Project Setup
+| 事件名                |                  说明                           | 回调参数          |
+| ------------------- | ------------------------------------------------ |  ------- |
+| onChange            | 文件状态改变时的钩子，添加文件、上传成功和上传失败时都会被调用     | function(file)         |
+| onUploadProgress    | 返回文件上传进度                                  | function(progress)         |
+| uploadError         | 上传失败                                         |function(error)        |
 
-```sh
-npm install
+## 安装使用
+
+```
+$ npm install put-file-tools
 ```
 
-### Compile and Hot-Reload for Development
-
-```sh
-npm run dev
 ```
+$ yarn add put-file-tools
+```
+```vue
 
-### Compile and Minify for Production
+<template>
+  <div id="app">
+    <PutFileTools 
+      :uploadApiUrl="uploadApiUrl"
+      :inspectRequest="inspectRequest"
+      @onUploadProgress="onUploadProgress"
+      @onChange="onChange"/>
+  </div>
+</template>
+<script setup>
+import PutFileTools from 'put-file-tools'
 
-```sh
-npm run build
+async function inspectRequest(hash) {
+  const res = await request(hash)
+  return res.data
+}
+
+// 上传进度
+function onUploadProgress(progress) {
+  console.log("onUploadProgress  progress", progress)
+}
+
+function onChange(file) {
+  console.log('onChange  file',file)
+}
+</script>
 ```

@@ -17,13 +17,6 @@ const props = defineProps({
     type: Function,
     default: ''
   },
-  // 上传失败
-  uploadError: {
-    type: Function,
-    default: () => {
-      return () => {}
-    }
-  },
   // 校验是否已经上传到服务的接口地址
   inspectApiUrl: {
     type: String,
@@ -41,7 +34,7 @@ const props = defineProps({
   },
 })
 
-const emits = defineEmits(['onUploadProgress'])
+const emits = defineEmits(['onUploadProgress','uploadError','onChange'])
 
 
 let blobSlice = null
@@ -70,6 +63,7 @@ let uploadedSize = 0
 async function onchange(e) {
   blobSlice = File.prototype.slice || File.prototype.mozSlice || File.prototype.webkitSlice
   file = e.target.files[0]
+  emits('onChange',file)
   fileProcessing()
 }
 
@@ -92,15 +86,16 @@ function fileProcessing() {
     chunkFormData.append('chunk', new Blob([e.target.result]))
     // 切片文件hash
     chunkFormData.append('chunkHash', chunkHash)
+    console.log("🚀 ~ file: PutFileTools.vue:89 ~ chunkHash:", chunkHash)
     
     uploadChunkQueue.value.push(chunkFormData)
-    
     currentChunkIndex++;
     if (currentChunkIndex < chunkNumber) {
       loadNext();
     } else {
       computedHash = spark.end()
       isLoaded = await inspectRequest(computedHash)
+
       
       // 验证文件是否已经在服务端存在，如果存在，那就不用上传了，相当于秒传成功。
       if(isLoaded === true) {
@@ -173,9 +168,6 @@ async function chunkUpload() {
 async function cheakChunkUpload() {
 
     if(currentUploadChunkIndex < chunkNumber){
-      console.log("🚀 ~ file: PutFileTools.vue:181 ~ cheakChunkUpload ~ currentUploadChunkIndex < chunkNumber:", currentUploadChunkIndex < chunkNumber)
-      console.log("🚀 ~ file: PutFileTools.vue:181 ~ cheakChunkUpload ~ uploadChunkQueue.value[currentUploadChunkIndex]:", uploadChunkQueue.value[currentUploadChunkIndex])
-      
       await fileUploadRequest(uploadChunkQueue.value[currentUploadChunkIndex])
       currentUploadChunkIndex ++
         chunkUpload()
@@ -190,3 +182,5 @@ async function cheakChunkUpload() {
     <input type="file" @change="onchange">
   </div>
 </template>
+
+
