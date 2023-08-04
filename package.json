@@ -13,7 +13,6 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^2.3.3",
-    "mockjs": "^1.1.0",
     "vite": "^2.9.9"
   },
   "description": "",

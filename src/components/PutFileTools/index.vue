@@ -2,6 +2,7 @@
 import SparkMD5, { hash } from 'spark-md5'
 import { ref } from 'vue'
 import axios from 'axios'
+import UploadQueue from './uploadQueue.js'
 
 const props = defineProps({
   // 切片大小
@@ -62,6 +63,7 @@ let waitUploadChunkQueue = ref([])
 let spark = null
 // 已上传大小
 let uploadedSize = 0
+let uploadQueue = new UploadQueue(props.concurrencyNumber)
 
 function init() {
   computedHash = ''
@@ -109,8 +111,8 @@ function fileProcessing() {
     chunkFormData.append('chunk', new Blob([e.target.result]))
     // 切片文件hash
     chunkFormData.append('chunkHash', chunkHash)
-
-    waitUploadChunkQueue.value.push(fileUploadRequest(chunkFormData))
+    const fileUpload = fileUploadRequest(chunkFormData)
+    uploadQueue.add(fileUpload)
     currentChunkIndex++
     if (currentChunkIndex < chunkNumber) {
       loadNext()
@@ -148,43 +150,46 @@ async function inspectRequest(computedHash) {
 
 // 上传请求
 function fileUploadRequest(chunkFormData) {
-  console.log(
-    '🚀 ~ file: PutFileTools.vue:151 ~ fileUploadRequest ~ chunkFormData:',
-    chunkFormData.values()
-  )
-  return new Promise((resolve) => {
-    chunkFormData.append('hash',computedHash)
-    axios({
-      method: 'POST',
-      url: props.uploadApiUrl,
-      data: chunkFormData,
-      headers: { hash:computedHash, chunkHash: chunkFormData.get('chunkHash') },
-      onUploadProgress: function (progressEvent) {
-        progress = progressEvent.loaded / fileSize
-        emits('onUploadProgress', progress)
-      },
-    }).then((res) => {
-      console.log("🚀 ~ file: PutFileTools.vue:167 ~ returnnewPromise ~ res:", res)
-      
-    }).catch((error) => {
-      emits('uploadError', error)
+  return function(computedHash) {
+    console.log("🚀 ~ file: index.vue:154 ~ returnfunction ~ computedHash:", computedHash)
+    return new Promise((resolve) => {
+      chunkFormData.append('hash', computedHash)
+      axios({
+        method: 'POST',
+        url: props.uploadApiUrl,
+        data: chunkFormData,
+        headers: {
+          hash: computedHash,
+          chunkHash: chunkFormData.get('chunkHash'),
+        },
+        onUploadProgress: function (progressEvent) {
+          progress = progressEvent.loaded / fileSize
+          emits('onUploadProgress', progress)
+        },
+      })
+        .then((res) => {
+          console.log(
+            '🚀 ~ file: PutFileTools.vue:167 ~ returnnewPromise ~ res:',
+            res
+          )
+          resolve(res)
+        })
+        .catch((error) => {
+          emits('uploadError', error)
+        })
     })
-  })
+  }
 }
 
 // 切片上传
 async function chunkUpload() {
-  console.log(
-    '🚀 ~ file: PutFileTools.vue:165 ~ chunkUpload ~ waitUploadChunkQueue:',
-    waitUploadChunkQueue
-  )
 
-  const uploadChunkQueue = waitUploadChunkQueue.value.splice(0, 3)
-  Promise.all([
-    uploadChunkQueue[0](computedHash),
-    uploadChunkQueue[1](computedHash),
-    uploadChunkQueue[2](computedHash),
-  ])
+  const uploadChunkQueue = uploadQueue.concurrencyQueue()
+  uploadChunkQueue.forEach(item => {
+     item(computedHash).then(res => {
+      uploadQueue.shift()(computedHash)
+     })
+  })
 }
 
 async function cheakChunkUpload() {
@@ -196,27 +201,8 @@ async function cheakChunkUpload() {
     if (isLoaded === false) {
       chunkUpload()
     } else if (Object.prototype.toString.call(isLoaded) === '[object Array]') {
-      // if (
-      //   isLoaded.includes(
-      //     waitUploadChunkQueue.value[currentUploadChunkIndex]?.chunkHash
-      //   )
-      // ) {
-      //   uploadedSize += props.chunkSize
-      //   currentUploadChunkIndex++
-      //   chunkUpload()
-      // } else {
-      //   cheakChunkUpload()
-      // }
     }
   }
-
-  // if (currentUploadChunkIndex < chunkNumber) {
-  //   const res = await fileUploadRequest(waitUploadChunkQueue.value[currentUploadChunkIndex])
-  //   console.log("🚀 ~ file: PutFileTools.vue:192 ~ cheakChunkUpload ~ res:", res)
-  //   currentUploadChunkIndex++
-  //   chunkUpload()
-  //   if (currentUploadChunkIndex < props.concurrencyNumber) chunkUpload()
-  // }
 }
 </script>
 

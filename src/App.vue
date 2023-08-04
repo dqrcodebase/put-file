@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import PutFileTools from './components/PutFileTools.vue'
+import PutFileTools from './components/PutFileTools/index.vue'
 import axios from 'axios'
 
 let fileProgress= ref(0)
