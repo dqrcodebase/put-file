@@ -15,11 +15,12 @@
 
 ## 方法
 
-| 事件名                |                  说明                           | 回调参数          |
+| 事件名               |                  说明                           | 回调参数          |
 | ------------------- | ------------------------------------------------ |  ------- |
 | onChange            | 文件状态改变时的钩子，添加文件会被调用     | function(file)         |
 | onUploadProgress    | 返回文件上传进度                                  | function(progress)         |
 | uploadError         | 上传失败                                         |function(error)        |
+| onFinish            | 上传完成                                         |function(hash)        |
 
 ## 安装使用
 
@@ -42,20 +43,44 @@ $ yarn add put-file-tools
   </div>
 </template>
 <script setup>
-import PutFileTools from 'put-file-tools'
+import { ref } from 'vue'
+import PutFileTools from 'PutFileTools'
+import axios from 'axios'
 
-async function inspectRequest(hash) {
-  const res = await request(hash)
-  return res.data
+let fileProgress = ref(0)
+const inspectApiUrl = '/api/uploadChunk/inspect'
+const uploadApiUrl = '/api/uploadChunk'
+const uploadFinishApiUrl = '/api/uploadChunk/finish'
+
+async function inspectRequest(hash, file) {
+  const res = await axios({
+    method: 'POST',
+    url: `${inspectApiUrl}/${hash}`,
+    data: { hash, name: file.name, size: file.size, type: file.type },
+  }).catch((error) => {
+    console.log('inspectRequest  error:', error)
+  })
+  return res.data.data
 }
 
 // 上传进度
 function onUploadProgress(progress) {
+  fileProgress.value = progress
   console.log("onUploadProgress  progress", progress)
 }
 
 function onChange(file) {
   console.log('onChange  file',file)
+}
+
+// 文件切片全部上传完成
+async function onFinish(hash) {
+  const res = await axios({
+    method: 'GET',
+    url: `${uploadFinishApiUrl}/${hash}`,
+  }).catch((error) => {
+    console.log('inspectRequest  error:', error)
+  })
 }
 </script>
 ```
