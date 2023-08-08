@@ -1,5 +1,6 @@
 export default class UploadQueue {
  queueList = []
+ computedHash = ''
 
   constructor(concurrencyNumber) {
     this.concurrencyNumber = concurrencyNumber
@@ -14,9 +15,10 @@ export default class UploadQueue {
     return this.queueList.shift()
   }
 
-  concurrencyQueue(computedHash) {
+  concurrencyQueue() {
     const queue = []
     for(let i = 0; i < this.concurrencyNumber; i++) {
+      if(this.queueList.length === 0) break
       queue.push(this.shift())
     }
     return queue
@@ -24,5 +26,9 @@ export default class UploadQueue {
 
   queueLength() {
     return this.queueList.length
+  }
+
+  saveComputedHash(computedHash) {
+    this.computedHash = computedHash
   }
 }
