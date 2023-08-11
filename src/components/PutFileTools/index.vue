@@ -39,8 +39,7 @@ const emits = defineEmits([
   'onUploadProgress',
   'uploadError',
   'onChange',
-  'onUploadFinish',
-  'onFinish'
+  'onFinish',
 ])
 
 let blobSlice = null
@@ -61,13 +60,13 @@ let fileReader = null
 // 上传进度
 let progress = 0
 // 切片列表信息
-let chunklist = []
+let chunkList = []
 // 已上传列表
 let uploadedChunkList = []
 let spark = null
 // 已上传大小
 let uploadedSize = 0
-let uploadQueue = new UploadQueue(props.concurrencyNumber)
+let uploadQueue = null
 
 function init() {
   computedHash = ''
@@ -80,6 +79,8 @@ function init() {
   currentUploadChunkIndex = 0
   file = null
   uploadedChunkList = []
+  uploadQueue = new UploadQueue(props.concurrencyNumber)
+  chunkList = []
 }
 
 async function onchange(e) {
@@ -105,7 +106,6 @@ function fileProcessing() {
     const chunkFormData = new FormData()
     // 切片的hash
     let chunkHash = SparkMD5.ArrayBuffer.hash(e.target.result)
-    console.log("🚀 ~ file: index.vue:108 ~ e.target.result:", e.target.result)
 
     spark.append(e.target.result)
     // 切片文件
@@ -114,9 +114,9 @@ function fileProcessing() {
     chunkFormData.append('chunkHash', chunkHash)
     const fileUpload = fileUploadRequest(chunkFormData)
     uploadQueue.add(fileUpload)
-    chunklist.push({
+    chunkList.push({
       chunkHash,
-      formData:chunkFormData
+      formData: chunkFormData,
     })
     currentChunkIndex++
     if (currentChunkIndex < chunkNumber) {
@@ -139,6 +139,7 @@ function loadNext() {
   const start = currentChunkIndex * props.chunkSize
   const end =
     start + props.chunkSize >= file.size ? file.size : start + props.chunkSize
+
   // 按字节读取文件内容
   fileReader.readAsArrayBuffer(blobSlice.call(file, start, end))
 }
@@ -146,7 +147,7 @@ function loadNext() {
 // 校验文件是否在服务器中存在
 async function inspectRequest() {
   if (props.inspectRequest) {
-    const data = await props.inspectRequest(computedHash,file)
+    const data = await props.inspectRequest(computedHash, file)
     return data
   } else {
     return false
@@ -167,13 +168,12 @@ function fileUploadRequest(chunkFormData) {
           chunkHash: chunkFormData.get('chunkHash'),
         },
         onUploadProgress: function (progressEvent) {
-          progress = progressEvent.loaded / fileSize
-          emits('onUploadProgress', progress)
+          onUploadProgress(progressEvent, chunkFormData)
         },
       })
         .then((res) => {
           uploadedChunkList.push(chunkFormData.get('chunkHash'))
-          resolve(res,chunkFormData)
+          resolve(res, chunkFormData)
         })
         .catch((error) => {
           emits('uploadError', error)
@@ -193,20 +193,18 @@ async function chunkUpload() {
 }
 
 function uploadQueueShift() {
-  console.log("🚀 ~ file: index.vue:200 ~ uploadQueueShift ~ chunklist:", chunklist)
-    console.log("🚀 ~ file: index.vue:200 ~ uploadQueueShift ~ uploadedChunkList:", uploadedChunkList)
-  console.log("🚀 ~ file: index.vue:199 ~ uploadQueueShift ~ uploadQueue:", uploadQueue.queueLength())
-
-  if(uploadQueue.queueLength() === 0 && uploadedChunkList.length === chunklist.length) {
-
-    emits('onFinish',computedHash)
+  const queueLength = uploadQueue.getQueueLength()
+  if (queueLength === 0 && uploadedChunkList.length === chunkList.length) {
+    emits('onFinish', computedHash)
     return
   }
-  uploadQueue
-    .shift()()
-    .then((res) => {
-      uploadQueueShift()
-    })
+  if (queueLength > 0) {
+    uploadQueue
+      .shift()()
+      .then((res) => {
+        uploadQueueShift()
+      })
+  }
 }
 
 async function cheakChunkUpload() {
@@ -220,6 +218,22 @@ async function cheakChunkUpload() {
     } else if (Object.prototype.toString.call(isLoaded) === '[object Array]') {
     }
   }
+}
+
+// 上传进度
+function onUploadProgress(progressEvent, chunkFormData) {
+  uploadQueue.changeProgress(
+    chunkFormData.get('chunkHash'),
+    progressEvent.loaded
+  )
+  const uploadedList = uploadQueue.getUploadedList()
+  let uploadedSize = 0
+  for (let hash in uploadedList) {
+    uploadedSize += uploadedList[hash]
+  }
+  progress = (uploadedSize / fileSize).toFixed(3)
+  progress = progress > 1? 1 : progress
+  emits('onUploadProgress', progress)
 }
 </script>
 

@@ -8,8 +8,8 @@ const inspectApiUrl = '/api/uploadChunk/inspect'
 const uploadApiUrl = '/api/uploadChunk'
 const uploadFinishApiUrl = '/api/uploadChunk/finish'
 
+// 检查文件是否存在服务器中
 async function inspectRequest(hash, file) {
-  console.log('🚀 ~ file: App.vue:13 ~ inspectRequest ~ file:', file)
   const res = await axios({
     method: 'POST',
     url: `${inspectApiUrl}/${hash}`,
@@ -23,7 +23,7 @@ async function inspectRequest(hash, file) {
 // 上传进度
 function onUploadProgress(progress) {
   fileProgress.value = progress
-  // console.log("onUploadProgress  progress", progress)
+  console.log('onUploadProgress  progress', progress)
 }
 
 function onChange(file) {
@@ -39,18 +39,23 @@ async function onFinish(hash) {
     console.log('inspectRequest  error:', error)
   })
 }
+
+function uploadError(err) {
+  console.log('uploadError err',err);
+}
 </script>
 
 <template>
   <main>
     {{ fileProgress }}
     <PutFileTools
+      :chunkSize="1024 * 1024 * 100"
       :uploadApiUrl="uploadApiUrl"
       :inspectRequest="inspectRequest"
       @onUploadProgress="onUploadProgress"
       @onChange="onChange"
       @onFinish="onFinish"
+      @uploadError="uploadError"
     />
-    <div @click="onchange">改变一下</div>
   </main>
 </template>

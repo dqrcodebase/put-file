@@ -2,7 +2,7 @@
 
 ## 序言
 
-> put-file-tools是一款针对大文件，超大文件上传的全方位解决方案，支持断点续传，持久化续传，全程状态监控，严格的请求队列模式，分片传输造成高并发的同时，又保障了数据传输的稳定性。
+> put-file-tools 支持大文件上传，断点续传，实时获取上传状态
 
 ## 属性
 
@@ -33,15 +33,6 @@ $ yarn add put-file-tools
 ```
 ```vue
 
-<template>
-  <div id="app">
-    <PutFileTools 
-      :uploadApiUrl="uploadApiUrl"
-      :inspectRequest="inspectRequest"
-      @onUploadProgress="onUploadProgress"
-      @onChange="onChange"/>
-  </div>
-</template>
 <script setup>
 import { ref } from 'vue'
 import PutFileTools from 'PutFileTools'
@@ -52,6 +43,7 @@ const inspectApiUrl = '/api/uploadChunk/inspect'
 const uploadApiUrl = '/api/uploadChunk'
 const uploadFinishApiUrl = '/api/uploadChunk/finish'
 
+// 检查文件是否存在服务器中
 async function inspectRequest(hash, file) {
   const res = await axios({
     method: 'POST',
@@ -66,11 +58,11 @@ async function inspectRequest(hash, file) {
 // 上传进度
 function onUploadProgress(progress) {
   fileProgress.value = progress
-  console.log("onUploadProgress  progress", progress)
+  console.log('onUploadProgress  progress', progress)
 }
 
 function onChange(file) {
-  console.log('onChange  file',file)
+  // console.log('onChange  file',file)
 }
 
 // 文件切片全部上传完成
@@ -82,5 +74,22 @@ async function onFinish(hash) {
     console.log('inspectRequest  error:', error)
   })
 }
+function uploadError(err) {
+  console.log('uploadError err',err);
+}
 </script>
+
+<template>
+  <main>
+    <PutFileTools
+      :chunkSize="1024 * 1024 * 100"
+      :uploadApiUrl="uploadApiUrl"
+      :inspectRequest="inspectRequest"
+      @onUploadProgress="onUploadProgress"
+      @onChange="onChange"
+      @onFinish="onFinish"
+      @uploadError="uploadError"
+    />
+  </main>
+</template>
 ```

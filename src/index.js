@@ -1,5 +1,5 @@
 
-import PutFileTools from './components/PutFileTools.vue'
+import PutFileTools from './components/PutFileTools/index.vue'
 
 export function install(Vue) {
   if (install.installed) return

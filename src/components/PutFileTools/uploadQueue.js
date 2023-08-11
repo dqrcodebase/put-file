@@ -1,6 +1,8 @@
 export default class UploadQueue {
  queueList = []
  computedHash = ''
+//  已上传列表
+ uploadedList = {}
 
   constructor(concurrencyNumber) {
     this.concurrencyNumber = concurrencyNumber
@@ -24,11 +26,16 @@ export default class UploadQueue {
     return queue
   }
 
-  queueLength() {
+  getQueueLength() {
     return this.queueList.length
   }
 
-  saveComputedHash(computedHash) {
-    this.computedHash = computedHash
+  // 切片上传进度
+  changeProgress(hash,loaded) {
+    this.uploadedList[hash] = loaded
+  }
+  
+  getUploadedList() {
+    return this.uploadedList
   }
 }
