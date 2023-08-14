@@ -23,7 +23,7 @@ async function inspectRequest(hash, file) {
 // 上传进度
 function onUploadProgress(progress) {
   fileProgress.value = progress
-  console.log('onUploadProgress  progress', progress)
+  // console.log('onUploadProgress  progress', progress)
 }
 
 function onChange(file) {

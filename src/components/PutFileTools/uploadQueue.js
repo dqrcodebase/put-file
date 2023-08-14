@@ -1,5 +1,8 @@
+import { hash } from "spark-md5"
+
 export default class UploadQueue {
  queueList = []
+ queueHashList = []
  computedHash = ''
 //  已上传列表
  uploadedList = {}
@@ -8,13 +11,20 @@ export default class UploadQueue {
     this.concurrencyNumber = concurrencyNumber
   }
 
-  add(item) {
+  add(hash,item) {
+    this.queueHashList.push(hash)
     this.queueList.push(item)
   }
 
   shift() {
     if(this.queueList.length === 0) return
+    this.queueHashList.shift()
     return this.queueList.shift()
+  }
+
+  queueListSplice(index,num) {
+    this.queueHashList.splice(index,num)
+    this.queueList.splice(index,num)
   }
 
   concurrencyQueue() {
@@ -37,5 +47,9 @@ export default class UploadQueue {
   
   getUploadedList() {
     return this.uploadedList
+  }
+
+  getQueueHashList() {
+    return this.queueHashList
   }
 }

@@ -113,7 +113,7 @@ function fileProcessing() {
     // 切片文件hash
     chunkFormData.append('chunkHash', chunkHash)
     const fileUpload = fileUploadRequest(chunkFormData)
-    uploadQueue.add(fileUpload)
+    uploadQueue.add(chunkHash, fileUpload)
     chunkList.push({
       chunkHash,
       formData: chunkFormData,
@@ -124,7 +124,7 @@ function fileProcessing() {
     } else {
       computedHash = spark.end()
       isLoaded = await inspectRequest()
-      cheakChunkUpload()
+      checkChunkUpload()
     }
   }
 
@@ -151,6 +151,59 @@ async function inspectRequest() {
     return data
   } else {
     return false
+  }
+}
+
+// 检查文件上传状态
+async function checkChunkUpload() {
+
+  if (isLoaded === true) {
+    // 验证文件是否已经在服务端存在，如果存在，那就不用上传了，相当于秒传成功。
+    progress = 100
+    emits('onUploadProgress', progress)
+  } else {
+    if (isLoaded === false) {
+      chunkUpload()
+    } else if (Object.prototype.toString.call(isLoaded) === '[object Array]') {
+      uploadedChunkList.push(...isLoaded)
+      const queueHashList = uploadQueue.getQueueHashList()
+      for (let i = 0; i < queueHashList.length; i++) {
+        if (isLoaded.includes(queueHashList[i])) {
+          console.log("🚀 ~ file: index.vue:172 ~ checkChunkUpload ~ i:", i)
+          console.log("🚀 ~ file: index.vue:172 ~ checkChunkUpload ~ queueHashList[i]:", queueHashList[i])
+          uploadQueue.queueListSplice(i, 1)
+          uploadQueue.changeProgress(queueHashList[i], props.chunkSize)
+          i--
+        }
+      }
+      chunkUpload()
+    }
+  }
+}
+
+// 切片上传
+async function chunkUpload() {
+  const uploadChunkQueue = uploadQueue.concurrencyQueue()
+  uploadChunkQueue.forEach((item) => {
+    item().then((res) => {
+      uploadQueueShift()
+    })
+  })
+}
+
+function uploadQueueShift() {
+  const queueLength = uploadQueue.getQueueLength()
+
+  if (queueLength === 0 && uploadedChunkList.length === chunkList.length) {
+    emits('onFinish', computedHash)
+    return
+  }
+  if (queueLength > 0) {
+    uploadQueue
+      .shift()()
+      .then((res) => {
+        uploadQueueShift()
+      })
   }
 }
 
@@ -182,44 +235,6 @@ function fileUploadRequest(chunkFormData) {
   }
 }
 
-// 切片上传
-async function chunkUpload() {
-  const uploadChunkQueue = uploadQueue.concurrencyQueue()
-  uploadChunkQueue.forEach((item) => {
-    item().then((res) => {
-      uploadQueueShift()
-    })
-  })
-}
-
-function uploadQueueShift() {
-  const queueLength = uploadQueue.getQueueLength()
-  if (queueLength === 0 && uploadedChunkList.length === chunkList.length) {
-    emits('onFinish', computedHash)
-    return
-  }
-  if (queueLength > 0) {
-    uploadQueue
-      .shift()()
-      .then((res) => {
-        uploadQueueShift()
-      })
-  }
-}
-
-async function cheakChunkUpload() {
-  if (isLoaded === true) {
-    // 验证文件是否已经在服务端存在，如果存在，那就不用上传了，相当于秒传成功。
-    progress = 100
-    emits('onUploadProgress', progress)
-  } else {
-    if (isLoaded === false) {
-      chunkUpload()
-    } else if (Object.prototype.toString.call(isLoaded) === '[object Array]') {
-    }
-  }
-}
-
 // 上传进度
 function onUploadProgress(progressEvent, chunkFormData) {
   uploadQueue.changeProgress(
@@ -227,12 +242,13 @@ function onUploadProgress(progressEvent, chunkFormData) {
     progressEvent.loaded
   )
   const uploadedList = uploadQueue.getUploadedList()
+  console.log("🚀 ~ file: index.vue:243 ~ onUploadProgress ~ uploadedList:", uploadedList)
   let uploadedSize = 0
   for (let hash in uploadedList) {
     uploadedSize += uploadedList[hash]
   }
   progress = (uploadedSize / fileSize).toFixed(3)
-  progress = progress > 1? 1 : progress
+  progress = progress > 1 ? 1 : progress
   emits('onUploadProgress', progress)
 }
 </script>
