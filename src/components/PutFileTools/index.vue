@@ -1,6 +1,5 @@
 <script setup>
-import SparkMD5, { hash } from 'spark-md5'
-import { ref } from 'vue'
+import SparkMD5 from 'spark-md5'
 import axios from 'axios'
 import UploadQueue from './uploadQueue.js'
 
@@ -52,8 +51,6 @@ let fileSize = 0
 let chunkNumber = 0
 // 当前处理的切片索引
 let currentChunkIndex = 0
-// 当前上传的切片索引
-let currentUploadChunkIndex = 0
 // 是否已经在服务器存在
 let isLoaded = false
 let fileReader = null
@@ -76,7 +73,6 @@ function init() {
   isLoaded = false
   chunkNumber = 0
   currentChunkIndex = 0
-  currentUploadChunkIndex = 0
   file = null
   uploadedChunkList = []
   uploadQueue = new UploadQueue(props.concurrencyNumber)
@@ -106,7 +102,6 @@ function fileProcessing() {
     const chunkFormData = new FormData()
     // 切片的hash
     let chunkHash = SparkMD5.ArrayBuffer.hash(e.target.result)
-
     spark.append(e.target.result)
     // 切片文件
     chunkFormData.append('chunk', new Blob([e.target.result]))
@@ -169,10 +164,8 @@ async function checkChunkUpload() {
       const queueHashList = uploadQueue.getQueueHashList()
       for (let i = 0; i < queueHashList.length; i++) {
         if (isLoaded.includes(queueHashList[i])) {
-          console.log("🚀 ~ file: index.vue:172 ~ checkChunkUpload ~ i:", i)
-          console.log("🚀 ~ file: index.vue:172 ~ checkChunkUpload ~ queueHashList[i]:", queueHashList[i])
-          uploadQueue.queueListSplice(i, 1)
           uploadQueue.changeProgress(queueHashList[i], props.chunkSize)
+          uploadQueue.queueListSplice(i, 1)
           i--
         }
       }
@@ -242,7 +235,6 @@ function onUploadProgress(progressEvent, chunkFormData) {
     progressEvent.loaded
   )
   const uploadedList = uploadQueue.getUploadedList()
-  console.log("🚀 ~ file: index.vue:243 ~ onUploadProgress ~ uploadedList:", uploadedList)
   let uploadedSize = 0
   for (let hash in uploadedList) {
     uploadedSize += uploadedList[hash]

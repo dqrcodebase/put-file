@@ -23,11 +23,11 @@ async function inspectRequest(hash, file) {
 // 上传进度
 function onUploadProgress(progress) {
   fileProgress.value = progress
-  // console.log('onUploadProgress  progress', progress)
+  console.log('onUploadProgress  progress', progress)
 }
 
 function onChange(file) {
-  // console.log('onChange  file',file)
+  console.log('onChange  file',file)
 }
 
 // 文件切片全部上传完成
